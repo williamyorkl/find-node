@@ -1,0 +1,26 @@
+(function () {
+    var moduleList = [
+     /* template */
+    ];
+    
+    // 引用关系
+    var moduleDepIdList = [
+      /* templateDepItem */
+    ];
+    
+
+    var myRequire = function (id, parentId) {
+      var currentModuleId =
+        parentId !== undefined ? moduleDepIdList[parentId][id] : id;
+  
+      var module = { exports: {} };
+  
+      var moduleFunc = moduleList[currentModuleId];
+  
+      moduleFunc((id) => myRequire(id, currentModuleId), module, module.exports);
+  
+      return module.exports;
+    };
+  
+    myRequire(0);
+  })();
