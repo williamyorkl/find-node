@@ -263,42 +263,52 @@ function handleFindChildNode() {
 const res2 = handleFindChildNode();
 console.log("🚀 符合条件的子节点:", res2);
 
-/** 三、改造"第二步"成为递归函数 */
+/**
+ * 三、改造"第一、二步"成为递归函数
+ * @param {*} sketchTree
+ * @param {*} codeTree
+ */
+function handleRecursiveFindChildren(sketchTree, codeTree) {
+  const matchChildNode = [];
+  sketchTree[0].children.forEach((sCNode, sCIndex) => {
+    // 每个sketch的父1节点进入
+    if (sCNode.children) {
+      sCNode.children.forEach((scNode3) => {
+        const res = breadthFirstSearch(scNode3, codeFatherNodeList[sCIndex]);
+        matchChildNode.push(...res);
+      });
+    } else {
+      handleRecursiveFindChildren(sCNode, codeTree[sCIndex]);
+    }
+  });
 
-// function handleRecursiveFindChildren() {
-//   const matchChildNode = [];
-//   sketchJsonList[0].children.forEach((sCNode, sCIndex) => {
-//     // 每个sketch的父1节点进入
-//     if (sCNode.children) {
-//       sCNode.children.forEach((scNode3) => {
-//         // 遍历每个父节点的子节点，传入广度遍历中；限制搜索范围是：第一颗code父亲的树
-//         const res = breadthFirstSearch(scNode3, codeFatherNodeList[sCIndex]);
-//         matchChildNode.push(...res);
-
-//         // 如果scNode3还有子节点
-//         if (scNode3.children) {
-//           scNode3.children.forEach((scNode4) => {
-//             const res = breadthFirstSearch(
-//               scNode4,
-//               codeFatherNodeList[sCIndex]
-//             );
-//             matchChildNode.push(...res);
-//           });
-//         }
-//       });
-//     }
-//   });
-
-//   return matchChildNode;
-// }
+  return matchChildNode;
+}
 
 /* 四、  */
 
 /**
  * 查找核心：
- *  1）第一次遍历sketch的第一层children，传入sketch的节点到 code树[0] 查找
- *  2）第一次找符合sketch的节点的所有在code树的节点
+ * （假如我想知道字体的颜色有没有对应上？）
+ *
+ *
+ *  1）第一次遍历sketch的第一层children，传入sketch的节点(层1)到 code树[0]
  *     ===> 获得第一层 “node节点列表” 与 “sketch节点列表” 对应的数组列表 list1
  *
- *  3）第二次遍历sketch的第二层children，传入sketch的节点到 code树[1]
+ *  2）第二次遍历sketch的第二层children，传入sketch的节点(层2)到 code树[1]
+ *     ===> 获得第二层 “node节点列表” 与 “sketch节点列表” 对应的数组列表 list2
+ *
+ *  .
+ *  .
+ *  .
+ *  （一直到sketch最小的那层，例如是“层3”）
+ *
+ *  3）最小的那层传入到code树[1]，如下情况：
+ *    * 找到对应code树的节点
+ *      - 匹配color
+ *      - 匹配font-family
+ *      若都可以匹配上，则说明一样，输出结果；如果匹配补上，输出匹配失败的结果
+ *
+ *    * 找不到对应code树的节点
+ *      - 有待考虑处理结果
  */
