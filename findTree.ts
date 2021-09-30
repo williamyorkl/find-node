@@ -1,5 +1,5 @@
 /** 代码node树 */
-const mainNode = [
+const mainNode: TreeType = [
   {
     name: "mainNode",
     rectAttr: {
@@ -80,7 +80,7 @@ const mainNode = [
 ];
 
 /** sketchNode树 */
-const sketchJsonList = [
+const sketchJsonList: TreeType = [
   {
     name: "sMainNode",
     rectAttr: {
@@ -229,7 +229,7 @@ function handleFindTree(sketchTree, codeTree) {
 
 /** 一、获取到对应sketch树的code的父节点 */
 const codeFatherNodeList = handleFindTree(sketchJsonList, mainNode[0]);
-console.log("🚀 符合条件的code父节点：", codeFatherNodeList);
+// console.log("🚀 符合条件的code父节点：", codeFatherNodeList);
 
 /** 二、遍历第一个sketch节点的children，是否在matchedCode父节点中 */
 
@@ -261,29 +261,79 @@ function handleFindChildNode() {
 }
 
 const res2 = handleFindChildNode();
-console.log("🚀 符合条件的子节点:", res2);
+// console.log("🚀 符合条件的子节点:", res2);
 
 /**
  * 三、改造"第一、二步"成为递归函数
- * @param {*} sketchTree
- * @param {*} codeTree
+ * @param {Array} sketchTree
+ * @param {Array} codeTree
  */
-function handleRecursiveFindChildren(sketchTree, codeTree) {
-  const matchChildNode = [];
-  sketchTree[0].children.forEach((sCNode, sCIndex) => {
-    // 每个sketch的父1节点进入
-    if (sCNode.children) {
-      sCNode.children.forEach((scNode3) => {
-        const res = breadthFirstSearch(scNode3, codeFatherNodeList[sCIndex]);
-        matchChildNode.push(...res);
-      });
-    } else {
-      handleRecursiveFindChildren(sCNode, codeTree[sCIndex]);
-    }
-  });
 
-  return matchChildNode;
+interface RectType {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
+
+interface NodeTree {
+  name: string;
+  rectAttr: RectType;
+  children: TreeType | null;
+}
+
+type TreeType = Array<NodeTree>;
+
+let recursiveCounter = 0;
+const matchedNodeMap = {};
+
+function handleRecursiveFindChildren(
+  sketchTree: TreeType,
+  codeTree: TreeType
+): Array<TreeType> {
+  recursiveCounter++;
+
+  //  遍历传入的sketchTree
+  for (let sIndex = 0; sIndex < sketchTree.length; sIndex++) {
+    const matchNodeList = []; // [fNode1,fNode2, ... ]
+
+    // 定义节点
+    const sNode = sketchTree[sIndex];
+
+    // 定义子节点
+    const sNodeChildren = sNode.children;
+
+    if (sNodeChildren) {
+      // 1）遍历当前children list下的item在 code树的匹配项
+      sNodeChildren.forEach((ssNode, ssIndex) => {
+        // 传入sketchNode节点，BFS查找在codeTree的匹配节点
+        const resNodeArray = breadthFirstSearch(ssNode, codeTree[sIndex]);
+
+        // 结果保存在matchNodeList
+        matchNodeList.push(...resNodeArray);
+      });
+
+      // 获取到 matchNodeList 结果后，递归传入
+      matchedNodeMap[recursiveCounter] = handleRecursiveFindChildren(
+        sNodeChildren,
+        matchNodeList
+      );
+    }
+
+    // matchNodeList 是对应的是code的节点， [fNode1,fNode2, ... ]
+    return matchNodeList;
+  }
+}
+
+matchedNodeMap[recursiveCounter] = handleRecursiveFindChildren(
+  sketchJsonList,
+  mainNode
+);
+
+console.log(
+  "🚀 ~ file: findTree.ts ~ line 334 ~ matchedNodeMap",
+  matchedNodeMap
+);
 
 /* 四、  */
 
