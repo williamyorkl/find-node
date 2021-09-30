@@ -171,10 +171,31 @@ const sketchJsonList: TreeType = [
   },
 ];
 
-// const flatList = [
-//   { name: "mainNode", rectAttr: {}, children: ["cNode1"] },
-//   { name: "cNode1", rectAttr: {}, children: null },
-// ];
+/**
+ * 查找核心：
+ * （假如我想知道字体的颜色有没有对应上？）
+ *
+ *
+ *  1）第一次遍历sketch的第一层children，传入sketch的节点(层1)到 code树[0]
+ *     ===> 获得第一层 “node节点列表” 与 “sketch节点列表” 对应的数组列表 list1
+ *
+ *  2）第二次遍历sketch的第二层children，传入sketch的节点(层2)到 code树[1]
+ *     ===> 获得第二层 “node节点列表” 与 “sketch节点列表” 对应的数组列表 list2
+ *
+ *  .
+ *  .
+ *  .
+ *  （一直到sketch最小的那层，例如是“层3”）
+ *
+ *  3）最小的那层传入到code树[1]，如下情况：
+ *    * 找到对应code树的节点
+ *      - 匹配color
+ *      - 匹配font-family
+ *      若都可以匹配上，则说明一样，输出结果；如果匹配补上，输出匹配失败的结果
+ *
+ *    * 找不到对应code树的节点
+ *      - 有待考虑处理结果
+ */
 
 /**
  *
@@ -284,14 +305,16 @@ interface NodeTree {
 
 type TreeType = Array<NodeTree>;
 
-let recursiveCounter = 0;
-const matchedNodeMap = {};
+interface MatchedMap {
+  [key: string]: TreeType;
+}
 
 function handleRecursiveFindChildren(
   sketchTree: TreeType,
-  codeTree: TreeType
-): Array<TreeType> {
-  recursiveCounter++;
+  codeTree: TreeType,
+  counter: number | null
+): MatchedMap {
+  const matchedNodeMap: MatchedMap = {};
 
   //  遍历传入的sketchTree
   for (let sIndex = 0; sIndex < sketchTree.length; sIndex++) {
@@ -303,62 +326,35 @@ function handleRecursiveFindChildren(
     // 定义子节点
     const sNodeChildren = sNode.children;
 
-    if (sNodeChildren) {
-      // 1）遍历当前children list下的item在 code树的匹配项
-      sNodeChildren.forEach((ssNode, ssIndex) => {
-        // 传入sketchNode节点，BFS查找在codeTree的匹配节点
-        const resNodeArray = breadthFirstSearch(ssNode, codeTree[sIndex]);
+    // 递归终结条件
+    if (!sNodeChildren) return;
 
-        // 结果保存在matchNodeList
-        matchNodeList.push(...resNodeArray);
-      });
+    // 1）遍历当前children list下的item在 code树的匹配项
+    sNodeChildren.forEach((ssNode, ssIndex) => {
+      // 传入sketchNode节点，BFS查找在codeTree的匹配节点
+      const resNodeArray = breadthFirstSearch(ssNode, codeTree[sIndex]);
 
-      // 获取到 matchNodeList 结果后，递归传入
-      matchedNodeMap[recursiveCounter] = handleRecursiveFindChildren(
-        sNodeChildren,
-        matchNodeList
-      );
-    }
+      // 结果保存在matchNodeList
+      matchNodeList.push(...resNodeArray);
+    });
 
-    // matchNodeList 是对应的是code的节点， [fNode1,fNode2, ... ]
-    return matchNodeList;
+    // 获取到 matchNodeList 结果后，递归传入
+    matchedNodeMap[counter] = matchNodeList;
+
+    // key + 1，然后作为参数往下传递
+    counter++;
+
+    Object.assign(
+      matchedNodeMap,
+      handleRecursiveFindChildren(sNodeChildren, matchNodeList, counter)
+    );
+
+    return matchedNodeMap;
   }
 }
 
-matchedNodeMap[recursiveCounter] = handleRecursiveFindChildren(
-  sketchJsonList,
-  mainNode
-);
+let res = handleRecursiveFindChildren(sketchJsonList, mainNode, 0);
 
-console.log(
-  "🚀 ~ file: findTree.ts ~ line 334 ~ matchedNodeMap",
-  matchedNodeMap
-);
+console.log("🚀 ~ file: findTree.ts ~ line 338 ~ res", res);
 
-/* 四、  */
-
-/**
- * 查找核心：
- * （假如我想知道字体的颜色有没有对应上？）
- *
- *
- *  1）第一次遍历sketch的第一层children，传入sketch的节点(层1)到 code树[0]
- *     ===> 获得第一层 “node节点列表” 与 “sketch节点列表” 对应的数组列表 list1
- *
- *  2）第二次遍历sketch的第二层children，传入sketch的节点(层2)到 code树[1]
- *     ===> 获得第二层 “node节点列表” 与 “sketch节点列表” 对应的数组列表 list2
- *
- *  .
- *  .
- *  .
- *  （一直到sketch最小的那层，例如是“层3”）
- *
- *  3）最小的那层传入到code树[1]，如下情况：
- *    * 找到对应code树的节点
- *      - 匹配color
- *      - 匹配font-family
- *      若都可以匹配上，则说明一样，输出结果；如果匹配补上，输出匹配失败的结果
- *
- *    * 找不到对应code树的节点
- *      - 有待考虑处理结果
- */
+/* 四、 添加各种匹配条件 */
